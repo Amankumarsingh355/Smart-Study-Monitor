@@ -1,0 +1,30 @@
+# Python Environment & Bytecode
+venv/
+env/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Node / Next.js Dashboard
+node_modules/
+.next/
+out/
+
+# Runtime Database & Logs
+data/*.db
+data/*.sqlite*
+*.log
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Secrets & Environment
+.env
+.env.local
+.env.*.local

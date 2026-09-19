@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Study Monitor — Live Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            zinc: {
+              950: '#09090b',
+              900: '#18181b',
+              800: '#27272a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #09090b; color: #fafafa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .gauge-circle { transition: stroke-dashoffset 0.7s ease-out, stroke 0.4s ease; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+  <!-- Top Header Navigation -->
+  <header class="border-b border-zinc-800/80 bg-zinc-900/60 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-emerald-400 flex items-center justify-center text-lg font-black text-white shadow-lg shadow-indigo-500/20">
+          S
+        </span>
+        <div>
+          <h1 class="text-sm font-bold tracking-tight text-white uppercase">Smart Study Monitor</h1>
+          <span class="text-[10px] text-zinc-400 font-mono block">AI BEHAVIORAL INTELLIGENCE &bull; LOCALHOST:8000</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <!-- Tab navigation -->
+        <nav class="flex items-center gap-2">
+          <button id="tab-live-btn" onclick="switchTab('live')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-zinc-800 text-white transition">Live Monitor</button>
+          <button id="tab-history-btn" onclick="switchTab('history')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-zinc-400 hover:text-white transition">Study History</button>
+          <a href="/docs" target="_blank" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-zinc-400 hover:text-white transition">API Docs</a>
+        </nav>
+
+        <!-- Live Connection Pill -->
+        <div id="connection-pill" class="flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-mono font-bold tracking-wider text-zinc-400 border-zinc-700 bg-zinc-800/40">
+          <span id="connection-dot" class="h-2 w-2 rounded-full bg-zinc-400 animate-pulse"></span>
+          <span id="connection-text">CONNECTING...</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Alert Banner Container -->
+  <div id="alert-banner" class="hidden fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-11/12 max-w-xl p-4 rounded-xl shadow-2xl border flex items-center justify-between transition-all bg-rose-950/95 border-rose-500 text-rose-100 shadow-rose-950/50">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl animate-pulse" id="alert-icon">⚠️</span>
+      <div>
+        <h4 class="text-sm font-bold tracking-wide uppercase" id="alert-title">ALERT</h4>
+        <p class="text-xs text-zinc-200 mt-0.5" id="alert-message">Alert message</p>
+      </div>
+    </div>
+    <button onclick="dismissAlert()" class="ml-4 px-2.5 py-1 text-xs font-semibold rounded-md bg-white/10 hover:bg-white/20 transition">Dismiss</button>
+  </div>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- TAB 1: LIVE MONITOR -->
+    <div id="tab-live" class="space-y-8">
+      <!-- Title row -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-zinc-900">
+        <div>
+          <h2 class="text-2xl font-black text-white tracking-tight">Live Study Monitor</h2>
+          <p class="text-xs text-zinc-400 mt-1">Real-time multi-modal posture, gaze, and focus tracking stream.</p>
+        </div>
+        <div class="text-xs text-zinc-400 font-mono" id="current-time-clock">--:--:--</div>
+      </div>
+
+      <!-- Main Status Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- 1. Current State -->
+        <div class="flex flex-col p-6 bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-2xl shadow-xl justify-between">
+          <div>
+            <span class="text-xs uppercase tracking-widest text-zinc-400 font-semibold mb-4 block">Current Activity</span>
+            <div class="flex items-center gap-3 mt-2">
+              <span id="state-dot" class="h-3.5 w-3.5 rounded-full bg-emerald-400 shadow-lg shadow-emerald-500/50"></span>
+              <span id="state-badge" class="px-3 py-1 rounded-full text-base font-bold tracking-wide border bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
+                FOCUSED
+              </span>
+            </div>
+            <p id="state-desc" class="text-xs text-zinc-400 mt-3 font-normal">Active screen study and attention</p>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-zinc-800/80">
+            <div class="flex justify-between items-center text-xs mb-1.5">
+              <span className="text-zinc-400 font-medium">Confidence</span>
+              <span id="confidence-text" class="text-white font-bold">95%</span>
+            </div>
+            <div class="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+              <div id="confidence-bar" class="bg-indigo-500 h-full rounded-full transition-all duration-500" style="width: 95%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Focus Score Circular Gauge -->
+        <div class="flex flex-col items-center justify-center p-6 bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-2xl shadow-xl">
+          <span class="text-xs uppercase tracking-widest text-zinc-400 font-semibold mb-4">Focus Score</span>
+          <div class="relative flex items-center justify-center">
+            <svg class="w-40 h-40 transform -rotate-90" viewBox="0 0 160 160">
+              <circle cx="80" cy="80" r="64" class="stroke-zinc-800" stroke-width="10" fill="transparent" />
+              <circle id="gauge-arc" cx="80" cy="80" r="64" class="gauge-circle stroke-emerald-400 text-emerald-400" stroke-width="10" stroke-dasharray="402.12" stroke-dashoffset="0" stroke-linecap="round" fill="transparent" />
+            </svg>
+            <div class="absolute flex flex-col items-center">
+              <span id="score-text" class="text-4xl font-extrabold text-white tracking-tight">100</span>
+              <span class="text-xs text-zinc-400 font-medium">/ 100</span>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center gap-2">
+            <span id="score-status-dot" class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="score-status-text" class="text-xs text-zinc-300 font-medium">High Focus</span>
+          </div>
+        </div>
+
+        <!-- 3. Session Stopwatch Timer -->
+        <div class="flex flex-col p-6 bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-2xl shadow-xl justify-between">
+          <div>
+            <span class="text-xs uppercase tracking-widest text-zinc-400 font-semibold mb-4 block">Study Session Timer</span>
+            <div id="session-timer-text" class="text-4xl sm:text-5xl font-mono font-black text-white tracking-wider my-2">00:00:00</div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-400">
+            <span>Session ID:</span>
+            <span id="session-id-text" class="font-mono text-zinc-300 bg-zinc-800/80 px-2 py-0.5 rounded">IDLE</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Focus Streak Card -->
+      <div class="p-5 bg-gradient-to-br from-amber-500/10 via-zinc-900 to-zinc-900 border border-amber-500/20 rounded-2xl shadow-xl flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="h-12 w-12 rounded-xl bg-amber-500/20 flex items-center justify-center text-2xl animate-bounce">🔥</div>
+          <div>
+            <span class="text-xs uppercase tracking-wider text-amber-300/80 font-bold block">Current Focus Streak</span>
+            <span id="current-streak-text" class="text-2xl sm:text-3xl font-extrabold text-white">0m 0s</span>
+          </div>
+        </div>
+        <div class="text-right pl-4 border-l border-zinc-800">
+          <span class="text-[11px] uppercase tracking-wider text-zinc-400 block font-medium">Session Best</span>
+          <span id="longest-streak-text" class="text-sm font-semibold text-zinc-200">🏆 0m 0s</span>
+        </div>
+      </div>
+
+      <!-- Telemetry Breakdown Grid -->
+      <div>
+        <h3 class="text-xs uppercase tracking-widest text-zinc-400 font-semibold mb-3">Session Duration Breakdown</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div class="p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 bg-zinc-900/60 backdrop-blur flex flex-col justify-between">
+            <div class="flex items-center justify-between text-xs text-zinc-400 font-medium mb-2"><span>Focused Time</span><span>🎯</span></div>
+            <div id="metric-focused" class="text-2xl font-bold text-emerald-400 tracking-tight">0s</div>
+          </div>
+          <div class="p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 bg-zinc-900/60 backdrop-blur flex flex-col justify-between">
+            <div class="flex items-center justify-between text-xs text-zinc-400 font-medium mb-2"><span>Distracted Time</span><span>⚠️</span></div>
+            <div id="metric-distracted" class="text-2xl font-bold text-amber-400 tracking-tight">0s</div>
+          </div>
+          <div class="p-4 rounded-xl border border-rose-500/20 bg-rose-500/5 bg-zinc-900/60 backdrop-blur flex flex-col justify-between">
+            <div class="flex items-center justify-between text-xs text-zinc-400 font-medium mb-2"><span>Phone Usage</span><span>📱</span></div>
+            <div id="metric-phone" class="text-2xl font-bold text-rose-400 tracking-tight">0s</div>
+          </div>
+          <div class="p-4 rounded-xl border border-purple-500/20 bg-purple-500/5 bg-zinc-900/60 backdrop-blur flex flex-col justify-between">
+            <div class="flex items-center justify-between text-xs text-zinc-400 font-medium mb-2"><span>Drowsy Time</span><span>💤</span></div>
+            <div id="metric-drowsy" class="text-2xl font-bold text-purple-400 tracking-tight">0s</div>
+          </div>
+          <div class="p-4 rounded-xl border border-blue-500/20 bg-blue-500/5 bg-zinc-900/60 backdrop-blur flex flex-col justify-between">
+            <div class="flex items-center justify-between text-xs text-zinc-400 font-medium mb-2"><span>Reading Time</span><span>📖</span></div>
+            <div id="metric-reading" class="text-2xl font-bold text-blue-400 tracking-tight">0s</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Event Activity Stream -->
+      <div class="p-6 bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-2xl shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs uppercase tracking-widest text-zinc-400 font-semibold">Live Activity Stream</span>
+          <span id="events-count" class="text-xs text-zinc-400 font-medium">0 events</span>
+        </div>
+        <div id="timeline-container" class="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+          <div class="text-center py-8 text-zinc-400 text-sm">Waiting for live behavioral stream from camera...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: STUDY HISTORY & INSIGHTS -->
+    <div id="tab-history" class="hidden space-y-8">
+      <div>
+        <h2 class="text-2xl font-black text-white tracking-tight">Study History & Longitudinal Intelligence</h2>
+        <p class="text-xs text-zinc-400 mt-1">Historical session logs, aggregate metrics, and AI behavioral insights.</p>
+      </div>
+
+      <!-- Aggregate Summary Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="p-4 bg-zinc-900/80 border border-zinc-800 rounded-xl">
+          <span class="text-xs text-zinc-400 uppercase font-medium">Total Sessions</span>
+          <div id="agg-sessions" class="text-2xl font-bold text-white mt-1">0</div>
+        </div>
+        <div class="p-4 bg-zinc-900/80 border border-zinc-800 rounded-xl">
+          <span class="text-xs text-zinc-400 uppercase font-medium">Total Study Time</span>
+          <div id="agg-duration" class="text-2xl font-bold text-indigo-400 mt-1">0m</div>
+        </div>
+        <div class="p-4 bg-zinc-900/80 border border-zinc-800 rounded-xl">
+          <span class="text-xs text-zinc-400 uppercase font-medium">Average Focus</span>
+          <div id="agg-focus" class="text-2xl font-bold text-emerald-400 mt-1">100%</div>
+        </div>
+        <div class="p-4 bg-zinc-900/80 border border-zinc-800 rounded-xl">
+          <span class="text-xs text-zinc-400 uppercase font-medium">Best Focus Streak</span>
+          <div id="agg-streak" class="text-2xl font-bold text-amber-400 mt-1">0m</div>
+        </div>
+      </div>
+
+      <!-- AI Recommendations -->
+      <div class="p-6 bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-2xl shadow-xl">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="text-xl">🤖</span>
+          <h3 class="text-base font-bold text-white tracking-wide">Adaptive AI Study Recommendations</h3>
+        </div>
+        <div id="recommendations-container" class="space-y-4">
+          <p class="text-zinc-400 text-sm">Loading study insights...</p>
+        </div>
+      </div>
+
+      <!-- Session Table -->
+      <div class="p-6 bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-2xl shadow-xl">
+        <h3 class="text-xs uppercase tracking-widest text-zinc-400 font-semibold mb-4">Recorded Study Sessions</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs font-mono">
+            <thead>
+              <tr class="border-b border-zinc-800 text-zinc-400 uppercase">
+                <th class="pb-3 font-semibold">Session ID</th>
+                <th class="pb-3 font-semibold">Start Time</th>
+                <th class="pb-3 font-semibold">Duration</th>
+                <th class="pb-3 font-semibold">Focus Score</th>
+                <th class="pb-3 font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody id="sessions-tbody" class="divide-y divide-zinc-800/60">
+              <tr><td colspan="5" class="py-4 text-center text-zinc-400">Loading sessions...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="border-t border-zinc-900 py-6 text-center text-xs text-zinc-400">
+    Smart Study Monitor &copy; 2026 &bull; Unified Localhost Host &bull; Fast REST + WebSockets
+  </footer>
+
+  <!-- Client Script for WebSockets and Telemetry Rendering -->
+  <script>
+    let ws = null;
+    let reconnectDelay = 1000;
+    const eventsList = [];
+    const circumference = 2 * Math.PI * 64; // 402.12
+
+    function formatSec(sec) {
+      const s = Math.round(sec || 0);
+      const m = Math.floor(s / 60);
+      const rem = s % 60;
+      return m === 0 ? `${rem}s` : `${m}m ${rem}s`;
+    }
+
+    function formatTimer(sec) {
+      const total = Math.floor(sec || 0);
+      const h = String(Math.floor(total / 3600)).padStart(2, '0');
+      const m = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
+      const s = String(total % 60).padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    }
+
+    function switchTab(tab) {
+      const liveDiv = document.getElementById('tab-live');
+      const histDiv = document.getElementById('tab-history');
+      const liveBtn = document.getElementById('tab-live-btn');
+      const histBtn = document.getElementById('tab-history-btn');
+
+      if (tab === 'live') {
+        liveDiv.classList.remove('hidden');
+        histDiv.classList.add('hidden');
+        liveBtn.classList.add('bg-zinc-800', 'text-white');
+        liveBtn.classList.remove('text-zinc-400');
+        histBtn.classList.remove('bg-zinc-800', 'text-white');
+        histBtn.classList.add('text-zinc-400');
+      } else {
+        liveDiv.classList.add('hidden');
+        histDiv.classList.remove('hidden');
+        histBtn.classList.add('bg-zinc-800', 'text-white');
+        histBtn.classList.remove('text-zinc-400');
+        liveBtn.classList.remove('bg-zinc-800', 'text-white');
+        liveBtn.classList.add('text-zinc-400');
+        loadHistoryData();
+      }
+    }
+
+    function setConnectionStatus(status) {
+      const pill = document.getElementById('connection-pill');
+      const dot = document.getElementById('connection-dot');
+      const text = document.getElementById('connection-text');
+
+      if (status === 'CONNECTED') {
+        pill.className = "flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-mono font-bold tracking-wider text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
+        dot.className = "h-2 w-2 rounded-full bg-emerald-400";
+        text.innerText = "CONNECTED";
+      } else if (status === 'RECONNECTING') {
+        pill.className = "flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-mono font-bold tracking-wider text-amber-400 border-amber-500/30 bg-amber-500/10";
+        dot.className = "h-2 w-2 rounded-full bg-amber-400 animate-ping";
+        text.innerText = "RECONNECTING...";
+      } else {
+        pill.className = "flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-mono font-bold tracking-wider text-rose-400 border-rose-500/30 bg-rose-500/10";
+        dot.className = "h-2 w-2 rounded-full bg-rose-400";
+        text.innerText = "DISCONNECTED";
+      }
+    }
+
+    function updateScore(score) {
+      const clamped = Math.max(0, Math.min(100, Math.round(score)));
+      document.getElementById('score-text').innerText = clamped;
+      const offset = circumference - (clamped / 100) * circumference;
+      const arc = document.getElementById('gauge-arc');
+      arc.style.strokeDashoffset = offset;
+
+      const sDot = document.getElementById('score-status-dot');
+      const sText = document.getElementById('score-status-text');
+
+      if (clamped >= 80) {
+        arc.setAttribute('class', 'gauge-circle stroke-emerald-400 text-emerald-400');
+        sDot.className = 'h-2 w-2 rounded-full bg-emerald-400 animate-pulse';
+        sText.innerText = 'High Focus';
+      } else if (clamped >= 60) {
+        arc.setAttribute('class', 'gauge-circle stroke-amber-400 text-amber-400');
+        sDot.className = 'h-2 w-2 rounded-full bg-amber-400';
+        sText.innerText = 'Moderate Focus';
+      } else {
+        arc.setAttribute('class', 'gauge-circle stroke-rose-400 text-rose-400');
+        sDot.className = 'h-2 w-2 rounded-full bg-rose-400';
+        sText.innerText = 'Distracted';
+      }
+    }
+
+    function updateState(state, conf) {
+      const s = (state || 'UNKNOWN').toUpperCase();
+      const badge = document.getElementById('state-badge');
+      const dot = document.getElementById('state-dot');
+      const desc = document.getElementById('state-desc');
+      const confText = document.getElementById('confidence-text');
+      const confBar = document.getElementById('confidence-bar');
+
+      const cPct = Math.round(conf <= 1.0 ? conf * 100 : conf);
+      confText.innerText = `${cPct}%`;
+      confBar.style.width = `${cPct}%`;
+
+      badge.innerText = s.replace(/_/g, ' ');
+
+      if (s === 'FOCUSED') {
+        badge.className = "px-3 py-1 rounded-full text-base font-bold tracking-wide border bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+        dot.className = "h-3.5 w-3.5 rounded-full bg-emerald-400 shadow-lg shadow-emerald-500/50";
+        desc.innerText = "Deep study & active attention";
+      } else if (s === 'READING') {
+        badge.className = "px-3 py-1 rounded-full text-base font-bold tracking-wide border bg-blue-500/10 text-blue-400 border-blue-500/30";
+        dot.className = "h-3.5 w-3.5 rounded-full bg-blue-400 shadow-lg shadow-blue-500/50";
+        desc.innerText = "Active textbook or notebook reading";
+      } else if (s === 'PHONE_USAGE') {
+        badge.className = "px-3 py-1 rounded-full text-base font-bold tracking-wide border bg-rose-500/10 text-rose-400 border-rose-500/30 animate-pulse";
+        dot.className = "h-3.5 w-3.5 rounded-full bg-rose-400 shadow-lg shadow-rose-500/50";
+        desc.innerText = "Smartphone detected in hands";
+      } else if (s === 'DROWSY') {
+        badge.className = "px-3 py-1 rounded-full text-base font-bold tracking-wide border bg-purple-500/10 text-purple-400 border-purple-500/30 animate-pulse";
+        dot.className = "h-3.5 w-3.5 rounded-full bg-purple-400 shadow-lg shadow-purple-500/50";
+        desc.innerText = "Prolonged eye closure / fatigue detected";
+      } else if (s === 'POOR_POSTURE') {
+        badge.className = "px-3 py-1 rounded-full text-base font-bold tracking-wide border bg-orange-500/10 text-orange-400 border-orange-500/30";
+        dot.className = "h-3.5 w-3.5 rounded-full bg-orange-400 shadow-lg shadow-orange-500/50";
+        desc.innerText = "Shoulder tilt or forward slouching detected";
+      } else {
+        badge.className = "px-3 py-1 rounded-full text-base font-bold tracking-wide border bg-amber-500/10 text-amber-400 border-amber-500/30";
+        dot.className = "h-3.5 w-3.5 rounded-full bg-amber-400";
+        desc.innerText = "Attention diverted from screen";
+      }
+    }
+
+    function showAlert(title, message, isCritical) {
+      const banner = document.getElementById('alert-banner');
+      document.getElementById('alert-title').innerText = title;
+      document.getElementById('alert-message').innerText = message;
+      document.getElementById('alert-icon').innerText = isCritical ? '🚨' : '⚠️';
+      banner.classList.remove('hidden');
+      setTimeout(() => { dismissAlert(); }, 6000);
+    }
+
+    function dismissAlert() {
+      document.getElementById('alert-banner').classList.add('hidden');
+    }
+
+    function addTimelineEvent(msg, type, isNegative) {
+      const timeStr = new Date().toLocaleTimeString();
+      eventsList.unshift({ timeStr, msg, type, isNegative });
+      if (eventsList.length > 20) eventsList.pop();
+
+      document.getElementById('events-count').innerText = `${eventsList.length} events`;
+      const cont = document.getElementById('timeline-container');
+      cont.innerHTML = eventsList.map(ev => `
+        <div class="flex items-center justify-between p-3 rounded-lg border bg-zinc-950/40 text-xs font-mono ${ev.isNegative ? 'text-rose-400 border-rose-500/30' : 'text-emerald-400 border-emerald-500/30'}">
+          <div class="flex items-center gap-3">
+            <span class="text-zinc-400">${ev.timeStr}</span>
+            <span class="font-semibold">${ev.msg}</span>
+          </div>
+          <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-zinc-800 text-zinc-300">${ev.type}</span>
+        </div>
+      `).join('');
+    }
+
+    function connectWebSocket() {
+      const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${wsProtocol}//${location.host}/ws/monitor`;
+
+      setConnectionStatus('RECONNECTING');
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        setConnectionStatus('CONNECTED');
+        reconnectDelay = 1000;
+        setInterval(() => {
+          if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'ping' }));
+        }, 15000);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          if (data.type === 'MONITOR_UPDATE') {
+            if (data.state) updateState(data.state, data.confidence || 0.95);
+            if (data.focus_score !== undefined) updateScore(data.focus_score);
+            if (data.session_id) document.getElementById('session-id-text').innerText = data.session_id.slice(0, 18);
+            if (data.duration !== undefined) document.getElementById('session-timer-text').innerText = formatTimer(data.duration);
+            if (data.focused_time !== undefined) document.getElementById('metric-focused').innerText = formatSec(data.focused_time);
+            if (data.distracted_time !== undefined) document.getElementById('metric-distracted').innerText = formatSec(data.distracted_time);
+            if (data.phone_time !== undefined) document.getElementById('metric-phone').innerText = formatSec(data.phone_time);
+            if (data.drowsy_time !== undefined) document.getElementById('metric-drowsy').innerText = formatSec(data.drowsy_time);
+            if (data.reading_time !== undefined) document.getElementById('metric-reading').innerText = formatSec(data.reading_time);
+            if (data.current_streak !== undefined) document.getElementById('current-streak-text').innerText = formatSec(data.current_streak);
+            if (data.longest_streak !== undefined) document.getElementById('longest-streak-text').innerText = `🏆 ${formatSec(data.longest_streak)}`;
+          } else if (data.type === 'BEHAVIOR_CHANGE') {
+            const newState = (data.current || '').toUpperCase();
+            updateState(newState, data.confidence || 0.95);
+            if (data.focus_score !== undefined) updateScore(data.focus_score);
+            const isNeg = ['PHONE_USAGE', 'DROWSY', 'POOR_POSTURE', 'LOOKING_AWAY'].includes(newState);
+            addTimelineEvent(`State: ${newState.replace(/_/g, ' ')}`, 'STATE', isNeg);
+          } else if (data.type === 'ALERT') {
+            showAlert(data.alert_type || 'ALERT', data.message || 'Attention required', data.severity === 'CRITICAL');
+            addTimelineEvent(data.message || data.alert_type, 'ALERT', true);
+          } else if (data.type === 'SESSION_STARTED') {
+            addTimelineEvent(`Session Started: ${data.session_id}`, 'SESSION', false);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      ws.onclose = () => {
+        setConnectionStatus('DISCONNECTED');
+        setTimeout(connectWebSocket, Math.min(reconnectDelay, 10000));
+        reconnectDelay = Math.min(reconnectDelay * 1.5, 10000);
+      };
+
+      ws.onerror = () => { ws.close(); };
+    }
+
+    async function loadHistoryData() {
+      try {
+        const [sessRes, aggRes, recRes] = await Promise.all([
+          fetch('/api/v1/sessions?limit=25'),
+          fetch('/api/v1/analytics/summary'),
+          fetch('/api/v1/analytics/recommendations')
+        ]);
+
+        if (sessRes.ok) {
+          const sessions = await sessRes.json();
+          const tbody = document.getElementById('sessions-tbody');
+          if (sessions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-zinc-400">No recorded sessions yet.</td></tr>';
+          } else {
+            tbody.innerHTML = sessions.map(s => {
+              const scoreBadge = s.focus_score >= 80 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : s.focus_score >= 60 ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-rose-500/10 text-rose-400 border-rose-500/30';
+              return `
+                <tr class="hover:bg-zinc-800/30 transition">
+                  <td class="py-3 font-bold text-white">${s.id}</td>
+                  <td class="py-3 text-zinc-300">${new Date(s.start_time).toLocaleString()}</td>
+                  <td class="py-3 text-zinc-200">${Math.round(s.duration / 60)} min</td>
+                  <td class="py-3"><span class="px-2 py-0.5 rounded border text-xs font-bold ${scoreBadge}">${Math.round(s.focus_score)}%</span></td>
+                  <td class="py-3 text-zinc-400 uppercase text-[10px]">${s.status}</td>
+                </tr>
+              `;
+            }).join('');
+          }
+        }
+
+        if (aggRes.ok) {
+          const agg = await aggRes.json();
+          document.getElementById('agg-sessions').innerText = agg.total_sessions;
+          document.getElementById('agg-duration').innerText = `${Math.round(agg.total_study_time / 60)}m`;
+          document.getElementById('agg-focus').innerText = `${Math.round(agg.average_focus_score)}%`;
+          document.getElementById('agg-streak').innerText = `${Math.round(agg.longest_focus_streak / 60)}m`;
+        }
+
+        if (recRes.ok) {
+          const recs = await recRes.json();
+          const cont = document.getElementById('recommendations-container');
+          cont.innerHTML = recs.map(r => `
+            <div class="p-4 rounded-xl border border-zinc-800 bg-zinc-950/50 hover:border-zinc-700 transition">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs uppercase font-bold tracking-wider text-indigo-400">${r.category}</span>
+                <span class="text-xs text-zinc-400 ml-auto">${Math.round(r.confidence * 100)}% confidence</span>
+              </div>
+              <h4 class="text-sm font-semibold text-zinc-100 mt-1">${r.title}</h4>
+              <p class="text-xs text-zinc-300 mt-1 leading-relaxed">${r.insight}</p>
+              <div class="mt-3 pt-2 border-t border-zinc-800/80 text-xs text-emerald-400 font-medium">
+                <span class="font-bold">Recommendation:</span> ${r.action}
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        console.error("Error loading historical data:", err);
+      }
+    }
+
+    // Auto-update clock
+    setInterval(() => {
+      document.getElementById('current-time-clock').innerText = new Date().toLocaleTimeString();
+    }, 1000);
+
+    // Initialize
+    connectWebSocket();
+  </script>
+</body>
+</html>
