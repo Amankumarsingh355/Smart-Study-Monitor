@@ -1,7 +1,7 @@
 # Smart-Study-Monitor
 Smart Study Monitor is an AI-powered system that uses computer vision to monitor student focus in real time. It detects drowsiness, eye movement, phone usage, and face obstruction, providing instant alerts. Built with Python, OpenCV, MediaPipe/cvzone, YOLO and FastAPI, it helps students build better and more productive study habits.
 
-## 🚀 Features
+## Features
 
 * 👁️ **Eye & Attention Monitoring** — Tracks eye movement and signs of reduced attention.
 * 😴 **Drowsiness Detection** — Detects prolonged eye closure and potential fatigue.
@@ -11,7 +11,7 @@ Smart Study Monitor is an AI-powered system that uses computer vision to monitor
 * 📊 **Study Insights** — Helps analyze study sessions and identify focus patterns.
 * 🌐 **Backend API** — FastAPI-based backend for processing and serving monitoring data.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 * **Python**
 * **OpenCV**
@@ -21,7 +21,7 @@ Smart Study Monitor is an AI-powered system that uses computer vision to monitor
 * **FastAPI**
 * **Next.js** *(for dashboard, if enabled)*
 
-## 🏗️ System Overview
+## System Overview
 
 ```text
 Camera
@@ -41,7 +41,7 @@ Real-Time Alerts
 Study Monitoring Dashboard
 ```
 
-## ⚙️ Installation
+## Installation
 
 ### 1. Clone the repository
 
@@ -72,7 +72,7 @@ pip install -r requirements.txt
 
 Follow the project-specific backend/frontend instructions provided in the repository.
 
-## 📁 Project Structure
+## Project Structure
 
 ```text
 Smart-Study-Monitor/
@@ -86,11 +86,11 @@ Smart-Study-Monitor/
 └── LICENSE
 ```
 
-## 🎯 Objective
+## Objective
 
 The goal of Smart Study Monitor is to create an intelligent study environment that helps students recognize distractions and fatigue while studying, allowing them to improve their concentration and study efficiency.
 
-## 🔮 Future Improvements
+## Future Improvements
 
 * Personalized focus analytics
 * Study-session history
@@ -104,7 +104,7 @@ The goal of Smart Study Monitor is to create an intelligent study environment th
 
 This project is licensed under the **MIT License**. See the `LICENSE` file for details.
 
-## 👨‍💻 Author
+## Author
 
 **Aman Kumar Singh**
 
